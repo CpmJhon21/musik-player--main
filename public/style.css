@@ -34,7 +34,6 @@ body.offline-mode {
     filter: grayscale(0.5);
 }
 
-/* --- PAGE VIEW CONFIG --- */
 .page-view {
     position: absolute;
     top: 0; left: 0; width: 100%;

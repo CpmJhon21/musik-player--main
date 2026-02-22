@@ -20,33 +20,34 @@ let isDraggingSlider = false;
 let audioLoadAttempts = 0;
 const MAX_RETRY_ATTEMPTS = 3;
 let shuffleMode = false;
-let repeatMode = 'none'; // 'none', 'all', 'one'
+let repeatMode = 'none';
 let originalPlaylist = [];
 
-// API Base URL - Relative path ke backend Anda
-const API_BASE = '/api'; // Akan memanggil index.js
+// API Base URL - Perhatikan path ini!
+const API_BASE = '/api'; // Akan memanggil /api/index
 
 // ==================== API FUNCTIONS ====================
 
 /**
- * Melakukan pencarian lagu atau mendapatkan detail lagu
- * @param {string} url - URL atau query pencarian
- * @param {string} mode - 'search' atau 'stream'
+ * Melakukan panggilan ke API
  */
 async function callAPI(url, mode = 'search') {
     try {
-        const response = await fetch(`${API_BASE}/index?url=${encodeURIComponent(url)}&mode=${mode}`);
+        const apiUrl = `${API_BASE}/index?url=${encodeURIComponent(url)}&mode=${mode}`;
+        console.log('Calling API:', apiUrl);
+        
+        const response = await fetch(apiUrl);
         
         if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.error || 'API Error');
+            const errorText = await response.text();
+            throw new Error(`HTTP ${response.status}: ${errorText}`);
         }
         
         if (mode === 'stream') {
             return response; // Return response object untuk stream
         }
         
-        return await response.json(); // Return JSON untuk search
+        return await response.json();
     } catch (error) {
         console.error('API call failed:', error);
         throw error;
@@ -55,16 +56,14 @@ async function callAPI(url, mode = 'search') {
 
 /**
  * Melakukan pencarian lagu
- * @param {string} query - Kata kunci pencarian (bisa URL atau query)
  */
 async function searchSongs(query) {
     const data = await callAPI(query, 'search');
-    return data; // Format: { type: 'list', songs: [...] }
+    return data;
 }
 
 /**
- * Mendapatkan stream URL (sebenarnya langsung fetch ke endpoint stream)
- * @param {string} songUrl - URL lagu dari hasil search
+ * Mendapatkan stream URL
  */
 function getStreamUrl(songUrl) {
     return `${API_BASE}/index?url=${encodeURIComponent(songUrl)}&mode=stream`;
@@ -72,7 +71,6 @@ function getStreamUrl(songUrl) {
 
 /**
  * Memutar lagu
- * @param {Object} songData - Data lagu {url, title, artist, thumbnail}
  */
 async function playMusic(songData) {
     if (!songData || !songData.url) {
@@ -90,7 +88,6 @@ async function playMusic(songData) {
     
     try {
         if (!navigator.onLine) {
-            // Cek offline
             const offlineSong = offlineSongs.find(s => s.url === songData.url);
             if (offlineSong) {
                 audio.src = offlineSong.audioData;
@@ -103,15 +100,12 @@ async function playMusic(songData) {
             }
         }
         
-        // Gunakan stream URL dari API
         const streamUrl = getStreamUrl(songData.url);
         console.log('Streaming from:', streamUrl);
         
-        // Set audio source
         audio.src = streamUrl;
         audio.load();
         
-        // Play dengan promise
         const playPromise = audio.play();
         
         if (playPromise !== undefined) {
@@ -126,8 +120,6 @@ async function playMusic(songData) {
                         showToast('Klik play untuk memulai', 'info');
                         isPlaying = false;
                         updatePlayIcons();
-                    } else if (error.name === 'NotSupportedError') {
-                        showToast('Format audio tidak didukung', 'error');
                     } else {
                         handleAudioError(error);
                     }
@@ -146,9 +138,7 @@ async function playMusic(songData) {
     }
 }
 
-/**
- * Melakukan pencarian dengan debounce
- */
+// ==================== SEARCH ====================
 let debounceTimer;
 searchInput.addEventListener('input', (e) => {
     clearTimeout(debounceTimer);
@@ -157,18 +147,12 @@ searchInput.addEventListener('input', (e) => {
     }, 800);
 });
 
-/**
- * Quick search dari home
- */
 function quickSearch(term) {
     switchTab('search');
     searchInput.value = term;
     performSearch(term);
 }
 
-/**
- * Eksekusi pencarian
- */
 async function performSearch(query) {
     if (!query || query.length < 2) return;
     
@@ -176,24 +160,12 @@ async function performSearch(query) {
     searchResults.innerHTML = '';
     
     try {
-        // Cek cache dulu
-        const cached = await searchCache.get('search', query);
-        if (cached) {
-            console.log('Using cached results for:', query);
-            loadingDiv.style.display = 'none';
-            renderSearchResults(cached.songs);
-            return;
-        }
-        
-        // Panggil API search
         const data = await searchSongs(query);
         console.log('Search results:', data);
         
         loadingDiv.style.display = 'none';
 
         if (data.songs && data.songs.length > 0) {
-            // Simpan ke cache
-            await searchCache.set('search', query, data, 24 * 60 * 60 * 1000);
             renderSearchResults(data.songs);
         } else {
             searchResults.innerHTML = '<div class="empty-state"><i class="fa-solid fa-music"></i><p>Lagu tidak ditemukan</p><span>Coba kata kunci lain</span></div>';
@@ -215,17 +187,6 @@ async function performSearch(query) {
     }
 }
 
-/**
- * Render hasil pencarian
- * Format song dari API Anda: 
- * { 
- *   id: "...", 
- *   title: "...", 
- *   artist: "...", 
- *   url: "...", 
- *   thumbnail: "..." 
- * }
- */
 function renderSearchResults(songs) {
     const container = document.getElementById('search-results');
     container.innerHTML = '';
@@ -242,7 +203,6 @@ function renderSearchResults(songs) {
             <i class="fa-solid fa-play" style="color:var(--green)"></i>
         `;
         
-        // Simpan data lagu
         item.onclick = () => {
             currentPlaylistSongs = songs;
             playMusic({
@@ -257,9 +217,6 @@ function renderSearchResults(songs) {
     });
 }
 
-/**
- * Escape HTML untuk keamanan
- */
 function escapeHtml(text) {
     if (!text) return '';
     const div = document.createElement('div');
@@ -269,7 +226,6 @@ function escapeHtml(text) {
 
 // ==================== AUDIO PLAYER SETUP ====================
 function setupAudioListeners() {
-    // Hapus listener lama
     audio.removeEventListener('timeupdate', handleTimeUpdate);
     audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
     audio.removeEventListener('ended', handleEnded);
@@ -278,9 +234,7 @@ function setupAudioListeners() {
     audio.removeEventListener('playing', handlePlaying);
     audio.removeEventListener('pause', handlePause);
     audio.removeEventListener('canplay', handleCanPlay);
-    audio.removeEventListener('stalled', handleStalled);
     
-    // Tambah listener baru
     audio.addEventListener('timeupdate', handleTimeUpdate);
     audio.addEventListener('loadedmetadata', handleLoadedMetadata);
     audio.addEventListener('ended', handleEnded);
@@ -289,7 +243,6 @@ function setupAudioListeners() {
     audio.addEventListener('playing', handlePlaying);
     audio.addEventListener('pause', handlePause);
     audio.addEventListener('canplay', handleCanPlay);
-    audio.addEventListener('stalled', handleStalled);
 }
 
 function handleTimeUpdate() {
@@ -307,7 +260,6 @@ function handleTimeUpdate() {
 function handleLoadedMetadata() {
     mainSlider.max = 100;
     document.getElementById('total-time').innerText = formatTime(audio.duration);
-    console.log('Audio duration:', audio.duration);
 }
 
 function handleEnded() {
@@ -324,8 +276,6 @@ function handleEnded() {
 
 function handleAudioError(e) {
     console.error('Audio Error:', e);
-    console.error('Error code:', audio.error ? audio.error.code : 'unknown');
-    console.error('Error message:', audio.error ? audio.error.message : 'unknown');
     
     if (audioLoadAttempts < MAX_RETRY_ATTEMPTS) {
         audioLoadAttempts++;
@@ -334,7 +284,6 @@ function handleAudioError(e) {
         setTimeout(() => {
             if (currentMeta) {
                 const streamUrl = getStreamUrl(currentMeta.url);
-                console.log('Retrying with URL:', streamUrl);
                 audio.src = streamUrl;
                 audio.load();
                 audio.play().catch(err => {
@@ -352,12 +301,6 @@ function handleAudioError(e) {
 function handleBuffering() {
     document.getElementById('mini-play-btn').className = 'fa-solid fa-spinner fa-spin';
     document.getElementById('full-play-icon').className = 'fa-solid fa-spinner fa-spin';
-    showToast('Buffering...', 'info');
-}
-
-function handleStalled() {
-    console.log('Audio stalled');
-    showToast('Loading...', 'info');
 }
 
 function handlePlaying() {
@@ -378,9 +321,6 @@ function handleCanPlay() {
     document.getElementById('full-play-icon').className = 'fa-solid fa-pause';
 }
 
-/**
- * Reset player
- */
 function resetPlayer() {
     audio.pause();
     audio.currentTime = 0;
@@ -397,9 +337,6 @@ function resetPlayer() {
     mainSlider.value = 0;
 }
 
-/**
- * Putar lagu berikutnya
- */
 function playNextSong() {
     if (!currentMeta) return;
     
@@ -427,9 +364,6 @@ function playNextSong() {
     }
 }
 
-/**
- * Putar lagu sebelumnya
- */
 function playPrevious() {
     if (!currentMeta || currentPlaylistSongs.length === 0) return;
     
@@ -440,9 +374,6 @@ function playPrevious() {
     }
 }
 
-/**
- * Acak array
- */
 function shuffleArray(array) {
     const newArray = [...array];
     for (let i = newArray.length - 1; i > 0; i--) {
@@ -452,9 +383,6 @@ function shuffleArray(array) {
     return newArray;
 }
 
-/**
- * Toggle shuffle mode
- */
 function toggleShuffle() {
     shuffleMode = !shuffleMode;
     const btn = document.getElementById('shuffle-btn');
@@ -462,9 +390,6 @@ function toggleShuffle() {
     showToast(shuffleMode ? 'Shuffle aktif' : 'Shuffle nonaktif', 'info');
 }
 
-/**
- * Toggle repeat mode
- */
 function toggleRepeat() {
     const modes = ['none', 'all', 'one'];
     const currentIndex = modes.indexOf(repeatMode);
@@ -487,9 +412,6 @@ function toggleRepeat() {
     }
 }
 
-/**
- * Suggest lagu berikutnya berdasarkan artist
- */
 async function suggestNextSong() {
     if (!currentMeta) return;
     
@@ -516,108 +438,11 @@ async function suggestNextSong() {
     }
 }
 
-// ==================== CACHE SYSTEM (IndexedDB) ====================
-class CacheSystem {
-    constructor(name, maxSize = 50 * 1024 * 1024) {
-        this.name = name;
-        this.maxSize = maxSize;
-        this.db = null;
-        this.initDB();
-    }
-    
-    async initDB() {
-        return new Promise((resolve, reject) => {
-            const request = indexedDB.open('MusicAppCache', 2);
-            
-            request.onerror = () => reject(request.error);
-            request.onsuccess = () => {
-                this.db = request.result;
-                resolve();
-            };
-            
-            request.onupgradeneeded = (event) => {
-                const db = event.target.result;
-                
-                if (!db.objectStoreNames.contains('songs')) {
-                    const songStore = db.createObjectStore('songs', { keyPath: 'url' });
-                    songStore.createIndex('timestamp', 'timestamp');
-                }
-                
-                if (!db.objectStoreNames.contains('search')) {
-                    const searchStore = db.createObjectStore('search', { keyPath: 'query' });
-                    searchStore.createIndex('timestamp', 'timestamp');
-                }
-            };
-        });
-    }
-    
-    async get(store, key) {
-        if (!this.db) await this.initDB();
-        
-        return new Promise((resolve, reject) => {
-            const transaction = this.db.transaction([store], 'readonly');
-            const objectStore = transaction.objectStore(store);
-            const request = objectStore.get(key);
-            
-            request.onerror = () => reject(request.error);
-            request.onsuccess = () => {
-                const data = request.result;
-                if (data && data.expiry && data.expiry < Date.now()) {
-                    this.delete(store, key);
-                    resolve(null);
-                } else {
-                    resolve(data ? data.value : null);
-                }
-            };
-        });
-    }
-    
-    async set(store, key, value, ttl = 24 * 60 * 60 * 1000) {
-        if (!this.db) await this.initDB();
-        
-        return new Promise((resolve, reject) => {
-            const transaction = this.db.transaction([store], 'readwrite');
-            const objectStore = transaction.objectStore(store);
-            
-            const data = {
-                url: key,
-                value: value,
-                timestamp: Date.now(),
-                expiry: Date.now() + ttl
-            };
-            
-            const request = objectStore.put(data);
-            
-            request.onerror = () => reject(request.error);
-            request.onsuccess = () => resolve();
-        });
-    }
-    
-    async delete(store, key) {
-        if (!this.db) await this.initDB();
-        
-        return new Promise((resolve, reject) => {
-            const transaction = this.db.transaction([store], 'readwrite');
-            const objectStore = transaction.objectStore(store);
-            const request = objectStore.delete(key);
-            
-            request.onerror = () => reject(request.error);
-            request.onsuccess = () => resolve();
-        });
-    }
-}
-
-const songCache = new CacheSystem('songs');
-const searchCache = new CacheSystem('search');
-
 // ==================== LYRICS SYSTEM ====================
 let currentLyrics = null;
 let lyricsSyncInterval = null;
 let isLyricsExpanded = false;
 
-/**
- * Fetch lirik dari API
- */
 async function fetchLyrics(songTitle, artist) {
     if (!songTitle || !artist) return null;
     
@@ -635,7 +460,6 @@ async function fetchLyrics(songTitle, artist) {
             }
         }
         
-        // Gunakan API lirik publik
         const response = await fetch(
             `https://api.lyrics.ovh/v1/${encodeURIComponent(artist)}/${encodeURIComponent(songTitle)}`,
             { timeout: 5000 }
@@ -671,9 +495,6 @@ async function fetchLyrics(songTitle, artist) {
     }
 }
 
-/**
- * Parse lirik
- */
 function parseLyrics(lyricsText) {
     const lines = lyricsText.split('\n');
     const parsed = [];
@@ -686,16 +507,13 @@ function parseLyrics(lyricsText) {
                 time: time,
                 text: line
             });
-            time += 4; // Asumsi setiap baris 4 detik
+            time += 4;
         }
     });
     
     return parsed;
 }
 
-/**
- * Toggle tampilan lirik
- */
 function toggleLyrics() {
     const container = document.querySelector('.lyrics-container');
     const chevron = document.getElementById('lyrics-chevron');
@@ -713,9 +531,6 @@ function toggleLyrics() {
     }
 }
 
-/**
- * Start sync lirik dengan waktu lagu
- */
 function startLyricsSync() {
     stopLyricsSync();
     
@@ -750,9 +565,6 @@ function startLyricsSync() {
     }, 100);
 }
 
-/**
- * Stop sync lirik
- */
 function stopLyricsSync() {
     if (lyricsSyncInterval) {
         clearInterval(lyricsSyncInterval);
@@ -760,9 +572,6 @@ function stopLyricsSync() {
     }
 }
 
-/**
- * Render lirik ke UI
- */
 function renderLyrics(lyrics) {
     const lyricsContent = document.getElementById('lyrics-content');
     
@@ -864,9 +673,9 @@ let offlineSongs = [];
 
 async function loadOfflineSongs() {
     try {
-        const stored = await songCache.get('songs', 'offline_list');
+        const stored = localStorage.getItem('offline_songs');
         if (stored) {
-            offlineSongs = stored;
+            offlineSongs = JSON.parse(stored);
         }
         renderOfflineIndicator();
         const offlineCount = document.getElementById('offline-count');
@@ -898,10 +707,7 @@ async function downloadCurrentSong() {
         const downloadBtn = document.getElementById('download-btn');
         downloadBtn.className = 'fa-solid fa-spinner fa-spin';
         
-        // Download dari stream URL
         const streamUrl = getStreamUrl(currentMeta.url);
-        console.log('Downloading from:', streamUrl);
-        
         const response = await fetch(streamUrl);
         
         if (!response.ok) {
@@ -923,8 +729,7 @@ async function downloadCurrentSong() {
             
             offlineSongs.push(songData);
             
-            await songCache.set('songs', `offline_${currentMeta.url}`, songData);
-            await songCache.set('songs', 'offline_list', offlineSongs);
+            localStorage.setItem('offline_songs', JSON.stringify(offlineSongs));
             
             downloadBtn.className = 'fa-solid fa-download';
             downloadBtn.style.color = 'var(--green)';
@@ -1074,15 +879,9 @@ async function doLogin() {
         return;
     }
     
-    if (!email.includes('@') || !email.includes('.')) {
-        showToast('Email tidak valid', 'warning');
-        return;
-    }
-    
     showToast('Memproses login...', 'info');
     
     try {
-        // Simulasi login - ganti dengan API real jika ada
         await new Promise(resolve => setTimeout(resolve, 1000));
         
         const user = {
@@ -1675,6 +1474,9 @@ function installApp() {
 
 // ==================== INITIALIZATION ====================
 window.onload = () => {
+    console.log('App initialized');
+    console.log('API Base URL:', API_BASE);
+    
     setupAudioListeners();
     loadLibrary();
     loadUser();
@@ -1695,11 +1497,24 @@ window.onload = () => {
         historyIcon.addEventListener('click', showHistory);
     }
     
-    // Cek koneksi awal
     if (!navigator.onLine) {
         document.body.classList.add('offline-mode');
         showToast('Anda sedang offline', 'warning');
     }
+    
+    // Test API connection
+    fetch(`${API_BASE}/index?url=test&mode=search`)
+        .then(response => {
+            if (response.ok) {
+                console.log('API connected successfully');
+            } else {
+                console.warn('API connection issue:', response.status);
+            }
+        })
+        .catch(err => {
+            console.error('API connection failed:', err);
+            showToast('Gagal terhubung ke server', 'error');
+        });
 };
 
 // Cleanup
