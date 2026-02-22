@@ -17,28 +17,9 @@ let currentMeta = null;
 let currentPlaylistSongs = []; 
 let isDraggingSlider = false;
 
-// ========== FITUR BARU: Volume Control ==========
-let previousVolume = 80;
-let isMuted = false;
-
-// ========== FITUR BARU: Shuffle & Repeat ==========
-let shuffleMode = false;
-let repeatMode = 'none'; // 'none', 'all', 'one'
-let originalPlaylist = [];
-
-// ========== FITUR BARU: Offline Download ==========
-let offlineSongs = [];
-
-// ========== FITUR BARU: History ==========
-const MAX_HISTORY = 50;
-
-// ========== FITUR BARU: Toast Notifications ==========
-
-// --- INITIALIZATION (DITINGKATKAN) ---
+// --- INITIALIZATION ---
 window.onload = () => {
     loadLibrary();
-    loadOfflineSongs();
-    loadVolumeSettings();
     
     // Tambahkan event listener ke icon gear
     const gearIcon = document.querySelector('.fa-gear');
@@ -52,70 +33,20 @@ window.onload = () => {
     const bellIcon = document.querySelector('.fa-bell');
     if (bellIcon) {
         bellIcon.addEventListener('click', function() {
-            showToast('Tidak ada notifikasi baru', 'info');
+            alert('Notifikasi: Belum ada notifikasi baru.');
         });
     }
     
-    // FITUR BARU: History icon sekarang berfungsi
+    // Tambahkan ke icon history
     const historyIcon = document.querySelector('.fa-clock-rotate-left');
     if (historyIcon) {
         historyIcon.addEventListener('click', function() {
-            showHistory();
+            alert('Riwayat putar akan segera tersedia.');
         });
-    }
-    
-    // Setup audio listeners tambahan
-    setupAudioListeners();
-    
-    // Cek koneksi
-    if (!navigator.onLine) {
-        showToast('Anda sedang offline', 'warning');
-        document.body.classList.add('offline-mode');
     }
 };
 
-// ========== FITUR BARU: Audio Listeners Tambahan ==========
-function setupAudioListeners() {
-    audio.addEventListener('volumechange', () => {
-        const volumeIcon = document.getElementById('volume-icon');
-        if (volumeIcon) {
-            if (audio.volume === 0) {
-                volumeIcon.className = 'fa-solid fa-volume-off';
-            } else if (audio.volume < 0.5) {
-                volumeIcon.className = 'fa-solid fa-volume-low';
-            } else {
-                volumeIcon.className = 'fa-solid fa-volume-high';
-            }
-        }
-    });
-}
-
-// ========== FITUR BARU: Toast Notification ==========
-function showToast(message, type = 'info') {
-    // Hapus toast yang sudah ada
-    const existingToast = document.querySelector('.toast-container');
-    if (existingToast) existingToast.remove();
-    
-    const toastContainer = document.createElement('div');
-    toastContainer.className = 'toast-container';
-    
-    const toast = document.createElement('div');
-    toast.className = `toast toast-${type}`;
-    toast.innerHTML = `
-        <i class="fa-solid ${type === 'error' ? 'fa-circle-exclamation' : type === 'success' ? 'fa-circle-check' : 'fa-circle-info'}"></i>
-        <span>${message}</span>
-    `;
-    
-    toastContainer.appendChild(toast);
-    document.body.appendChild(toastContainer);
-    
-    setTimeout(() => {
-        toast.classList.add('toast-hide');
-        setTimeout(() => toastContainer.remove(), 300);
-    }, 3000);
-}
-
-// --- NAVIGASI (TIDAK BERUBAH) ---
+// --- NAVIGATION ---
 function switchTab(tabName) {
     let targetId;
     if (tabName === 'playlist-detail') {
@@ -150,7 +81,7 @@ function switchTab(tabName) {
     }
 }
 
-// --- SEARCH LOGIC (TIDAK BERUBAH) ---
+// --- SEARCH LOGIC ---
 let debounceTimer;
 searchInput.addEventListener('input', (e) => {
     clearTimeout(debounceTimer);
@@ -180,16 +111,15 @@ async function performSearch(query) {
                 const item = document.createElement('div');
                 item.className = 'result-item';
                 item.innerHTML = `
-                    <img src="${song.thumbnail}" alt="art" onerror="this.src='https://cdn.odzre.my.id/aax.jpg'">
+                    <img src="${song.thumbnail}" alt="art">
                     <div class="result-info">
-                        <h4>${escapeHtml(song.title)}</h4>
-                        <p>${escapeHtml(song.artist)}</p>
+                        <h4>${song.title}</h4>
+                        <p>${song.artist}</p>
                     </div>
                     <i class="fa-solid fa-play" style="color:var(--green)"></i>
                 `;
                 item.onclick = () => {
-                    currentPlaylistSongs = data.songs; // Simpan seluruh hasil search
-                    originalPlaylist = [...data.songs]; // Untuk shuffle
+                    currentPlaylistSongs = []; 
                     playMusic({
                         url: song.url,
                         title: song.title,
@@ -205,43 +135,17 @@ async function performSearch(query) {
     } catch (e) {
         loadingDiv.style.display = 'none';
         searchResults.innerHTML = '<div style="text-align:center; padding:20px;">Error koneksi.</div>';
-        showToast('Gagal mencari: ' + e.message, 'error');
     }
 }
 
-// ========== FITUR BARU: Escape HTML ==========
-function escapeHtml(text) {
-    if (!text) return '';
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
-}
-
-// --- PLAYER LOGIC (DITINGKATKAN) ---
+// --- PLAYER LOGIC ---
 async function playMusic(songData) {
     currentMeta = songData;
     updateUI(currentMeta);
     
     document.getElementById('mini-play-btn').className = 'fa-solid fa-spinner fa-spin';
-    document.getElementById('full-play-icon').className = 'fa-solid fa-spinner fa-spin';
 
     try {
-        // Cek offline dulu
-        if (!navigator.onLine) {
-            const offlineSong = offlineSongs.find(s => s.url === songData.url);
-            if (offlineSong) {
-                audio.src = offlineSong.audioData;
-                await audio.play();
-                isPlaying = true;
-                updatePlayIcons();
-                showToast('Memutar offline', 'success');
-                return;
-            } else {
-                showToast('Tidak ada koneksi internet', 'error');
-                return;
-            }
-        }
-        
         const streamUrl = `/api/index?url=${encodeURIComponent(songData.url)}&mode=stream`;
         audio.src = streamUrl;
         audio.preload = "auto";
@@ -249,18 +153,11 @@ async function playMusic(songData) {
         
         isPlaying = true;
         updatePlayIcons();
-        
-        // FITUR BARU: Simpan ke history
-        saveToHistory(songData);
-        
-        // FITUR BARU: Update offline indicator
-        updateOfflineIndicator();
 
     } catch (e) {
         console.error(e);
         isPlaying = false;
         updatePlayIcons();
-        showToast('Gagal memutar: ' + e.message, 'error');
     }
 }
 
@@ -274,7 +171,6 @@ function updateUI(meta) {
     document.getElementById('full-artist').innerText = meta.artist;
 
     checkLikeStatus();
-    updateOfflineIndicator();
 }
 
 function checkLikeStatus() {
@@ -292,7 +188,7 @@ function checkLikeStatus() {
     }
 }
 
-// --- CONTROLS (TIDAK BERUBAH) ---
+// --- CONTROLS ---
 miniPlayer.addEventListener('click', (e) => {
     if(!e.target.closest('.mini-controls')) {
         fullPlayer.classList.add('show');
@@ -303,17 +199,8 @@ function closeFullPlayer() {
     fullPlayer.classList.remove('show');
 }
 
-// ========== FITUR BARU: Toggle Play dengan Enhanced ==========
 function togglePlay() {
-    if (!audio.src) {
-        if (currentMeta) {
-            playMusic(currentMeta);
-        } else {
-            showToast('Pilih lagu terlebih dahulu', 'info');
-        }
-        return;
-    }
-    
+    if (!audio.src) return;
     if (isPlaying) {
         audio.pause();
         isPlaying = false;
@@ -339,14 +226,13 @@ function updatePlayIcons() {
 
 audio.addEventListener('waiting', () => {
     document.getElementById('mini-play-btn').className = 'fa-solid fa-spinner fa-spin';
-    document.getElementById('full-play-icon').className = 'fa-solid fa-spinner fa-spin';
 });
 
 audio.addEventListener('playing', () => {
     updatePlayIcons();
 });
 
-// --- SEEKING & PROGRESS BAR (TIDAK BERUBAH) ---
+// --- SEEKING & PROGRESS BAR ---
 audio.addEventListener('timeupdate', () => {
     if (!audio.duration) return;
     
@@ -373,348 +259,284 @@ mainSlider.addEventListener('change', (e) => {
     isDraggingSlider = false;
 });
 
-// ========== FITUR BARU: Shuffle & Repeat ==========
-function toggleShuffle() {
-    shuffleMode = !shuffleMode;
-    const btn = document.getElementById('shuffle-btn');
-    if (btn) {
-        btn.style.color = shuffleMode ? 'var(--green)' : 'white';
-    }
-    showToast(shuffleMode ? 'Shuffle aktif' : 'Shuffle nonaktif', 'info');
-}
+audio.addEventListener('ended', async () => {
+    if(!currentMeta) return;
 
-function toggleRepeat() {
-    const modes = ['none', 'all', 'one'];
-    const currentIndex = modes.indexOf(repeatMode);
-    repeatMode = modes[(currentIndex + 1) % modes.length];
-    
-    const btn = document.getElementById('repeat-btn');
-    if (!btn) return;
-    
-    if (repeatMode === 'one') {
-        btn.className = 'fa-solid fa-repeat-1';
-        btn.style.color = 'var(--green)';
-        showToast('Repeat satu lagu', 'info');
-    } else if (repeatMode === 'all') {
-        btn.className = 'fa-solid fa-repeat';
-        btn.style.color = 'var(--green)';
-        showToast('Repeat semua', 'info');
-    } else {
-        btn.className = 'fa-solid fa-repeat';
-        btn.style.color = 'white';
-        showToast('Repeat nonaktif', 'info');
-    }
-}
-
-function getNextSong() {
-    if (currentPlaylistSongs.length === 0) return null;
-    
-    let playlist = currentPlaylistSongs;
-    if (shuffleMode) {
-        // Simple shuffle: pilih random
-        const randomIndex = Math.floor(Math.random() * playlist.length);
-        return playlist[randomIndex];
-    }
-    
-    const currentIndex = playlist.findIndex(s => s.url === currentMeta?.url);
-    
-    if (currentIndex === -1) return playlist[0];
-    
-    if (currentIndex < playlist.length - 1) {
-        return playlist[currentIndex + 1];
-    } else if (repeatMode === 'all') {
-        return playlist[0];
-    }
-    
-    return null;
-}
-
-// ========== FITUR BARU: Play Next/Previous ==========
-function playNext() {
-    const nextSong = getNextSong();
-    if (nextSong) {
-        playMusic(nextSong);
-    } else {
-        showToast('Tidak ada lagu berikutnya', 'info');
-    }
-}
-
-function playPrevious() {
-    if (currentPlaylistSongs.length === 0 || !currentMeta) return;
-    
     const currentIndex = currentPlaylistSongs.findIndex(s => s.url === currentMeta.url);
-    
-    if (currentIndex > 0) {
-        playMusic(currentPlaylistSongs[currentIndex - 1]);
-    } else {
-        showToast('Ini lagu pertama', 'info');
-    }
-}
-
-// ========== FITUR BARU: Volume Control ==========
-function loadVolumeSettings() {
-    try {
-        const savedVolume = localStorage.getItem('app_volume');
-        if (savedVolume !== null) {
-            const vol = parseFloat(savedVolume);
-            audio.volume = vol;
-            
-            const volumeSlider = document.getElementById('volume-slider');
-            const volumePercent = document.getElementById('volume-percent');
-            
-            if (volumeSlider) volumeSlider.value = vol * 100;
-            if (volumePercent) volumePercent.textContent = Math.round(vol * 100) + '%';
-        }
-    } catch (e) {
-        console.error('Failed to load volume:', e);
-    }
-}
-
-function initVolumeControl() {
-    const volumeSlider = document.getElementById('volume-slider');
-    const volumePercent = document.getElementById('volume-percent');
-    
-    if (!volumeSlider) return;
-    
-    volumeSlider.addEventListener('input', (e) => {
-        const val = e.target.value / 100;
-        audio.volume = val;
-        if (volumePercent) volumePercent.textContent = e.target.value + '%';
-        
-        try {
-            localStorage.setItem('app_volume', val);
-        } catch (e) {}
-    });
-    
-    volumeSlider.addEventListener('dblclick', () => {
-        volumeSlider.value = 100;
-        audio.volume = 1;
-        if (volumePercent) volumePercent.textContent = '100%';
-        localStorage.setItem('app_volume', 1);
-        showToast('Volume maksimum', 'success');
-    });
-}
-
-function toggleMute() {
-    if (audio.volume === 0) {
-        audio.volume = previousVolume / 100;
-        const volumeSlider = document.getElementById('volume-slider');
-        const volumePercent = document.getElementById('volume-percent');
-        if (volumeSlider) volumeSlider.value = previousVolume;
-        if (volumePercent) volumePercent.textContent = previousVolume + '%';
-        showToast('Suara diaktifkan', 'info');
-    } else {
-        previousVolume = Math.round(audio.volume * 100);
-        audio.volume = 0;
-        const volumeSlider = document.getElementById('volume-slider');
-        const volumePercent = document.getElementById('volume-percent');
-        if (volumeSlider) volumeSlider.value = 0;
-        if (volumePercent) volumePercent.textContent = '0%';
-        showToast('Suara dimatikan', 'info');
-    }
-    
-    localStorage.setItem('app_volume', audio.volume);
-}
-
-// ========== FITUR BARU: Offline Download ==========
-function loadOfflineSongs() {
-    try {
-        const stored = localStorage.getItem('offline_songs');
-        if (stored) {
-            offlineSongs = JSON.parse(stored);
-        }
-        updateOfflineCount();
-    } catch (e) {
-        console.error('Failed to load offline songs:', e);
-    }
-}
-
-function updateOfflineCount() {
-    const offlineCount = document.getElementById('offline-count');
-    if (offlineCount) {
-        offlineCount.textContent = offlineSongs.length;
-    }
-}
-
-function updateOfflineIndicator() {
-    const downloadBtn = document.getElementById('download-btn');
-    if (!downloadBtn || !currentMeta) return;
-    
-    if (offlineSongs.some(s => s.url === currentMeta.url)) {
-        downloadBtn.style.color = 'var(--green)';
-        downloadBtn.title = 'Sudah di-download';
-    } else {
-        downloadBtn.style.color = 'white';
-        downloadBtn.title = 'Download offline';
-    }
-}
-
-async function downloadCurrentSong() {
-    if (!currentMeta) {
-        showToast('Pilih lagu terlebih dahulu', 'warning');
+    if (currentIndex !== -1 && currentIndex < currentPlaylistSongs.length - 1) {
+        playMusic(currentPlaylistSongs[currentIndex + 1]);
         return;
     }
-    
-    if (offlineSongs.some(s => s.url === currentMeta.url)) {
-        showToast('Lagu sudah tersedia offline', 'info');
-        return;
-    }
-    
-    if (!navigator.onLine) {
-        showToast('Tidak ada koneksi internet', 'error');
-        return;
-    }
-    
-    showToast('Menyiapkan download...', 'info');
+
+    document.getElementById('mini-title').innerText = "Mencari lagu selanjutnya...";
     
     try {
-        const downloadBtn = document.getElementById('download-btn');
-        if (downloadBtn) downloadBtn.className = 'fa-solid fa-spinner fa-spin';
-        
-        const streamUrl = `/api/index?url=${encodeURIComponent(currentMeta.url)}&mode=stream`;
-        const response = await fetch(streamUrl);
-        
-        if (!response.ok) throw new Error('Download gagal');
-        
-        const audioBlob = await response.blob();
-        
-        const reader = new FileReader();
-        reader.onloadend = function() {
-            const base64Audio = reader.result;
+        const res = await fetch(`/api/index?url=${encodeURIComponent(currentMeta.artist)}&mode=search`);
+        const data = await res.json();
+
+        if (data.songs && data.songs.length > 0) {
+            const suggestions = data.songs.filter(s => s.url !== currentMeta.url);
             
-            const songData = {
-                ...currentMeta,
-                audioData: base64Audio,
-                downloadedAt: Date.now()
-            };
-            
-            offlineSongs.push(songData);
-            localStorage.setItem('offline_songs', JSON.stringify(offlineSongs));
-            
-            if (downloadBtn) {
-                downloadBtn.className = 'fa-solid fa-download';
-                downloadBtn.style.color = 'var(--green)';
+            if (suggestions.length > 0) {
+                const nextSong = suggestions[0];
+                currentPlaylistSongs = []; 
+                playMusic({
+                    url: nextSong.url,
+                    title: nextSong.title,
+                    artist: nextSong.artist,
+                    cover: nextSong.thumbnail
+                });
+            } else {
+                isPlaying = false; 
+                updatePlayIcons();
             }
-            
-            updateOfflineCount();
-            showToast('Download selesai!', 'success');
-        };
-        
-        reader.readAsDataURL(audioBlob);
-        
-    } catch (error) {
-        console.error('Download failed:', error);
-        const downloadBtn = document.getElementById('download-btn');
-        if (downloadBtn) downloadBtn.className = 'fa-solid fa-download';
-        showToast('Gagal download: ' + error.message, 'error');
-    }
-}
-
-function openOfflineLibrary() {
-    switchTab('library');
-    
-    setTimeout(() => {
-        const libraryDiv = document.getElementById('library-list');
-        if (!libraryDiv) return;
-        
-        // Tampilkan offline songs di atas
-        const offlineSection = document.createElement('div');
-        offlineSection.innerHTML = '<h3 style="margin:20px 0 10px;">Lagu Offline</h3>';
-        
-        if (offlineSongs.length === 0) {
-            offlineSection.innerHTML += '<p style="color:#777; text-align:center;">Belum ada lagu offline</p>';
-        } else {
-            offlineSongs.forEach(song => {
-                const item = document.createElement('div');
-                item.className = 'result-item';
-                item.innerHTML = `
-                    <img src="${song.cover}" onerror="this.src='https://cdn.odzre.my.id/aax.jpg'">
-                    <div class="result-info">
-                        <h4>${escapeHtml(song.title)}</h4>
-                        <p>${escapeHtml(song.artist)}</p>
-                        <span style="font-size:10px; color:var(--green);">
-                            <i class="fa-solid fa-circle-check"></i> Offline
-                        </span>
-                    </div>
-                    <i class="fa-solid fa-play" style="color:var(--green)"></i>
-                `;
-                item.onclick = () => playOfflineSong(song);
-                offlineSection.appendChild(item);
-            });
         }
-        
-        libraryDiv.prepend(offlineSection);
-    }, 100);
-}
-
-async function playOfflineSong(songData) {
-    if (songData.audioData) {
-        audio.src = songData.audioData;
-        await audio.play();
-        currentMeta = songData;
-        updateUI(songData);
-        isPlaying = true;
+    } catch (e) {
+        isPlaying = false; 
         updatePlayIcons();
-        showToast('Memutar offline', 'success');
     }
+});
+
+function formatTime(s) {
+    if(isNaN(s)) return "0:00";
+    const min = Math.floor(s / 60);
+    const sec = Math.floor(s % 60);
+    return `${min}:${sec < 10 ? '0'+sec : sec}`;
 }
 
-// ========== FITUR BARU: History ==========
-function saveToHistory(song) {
-    let history = JSON.parse(localStorage.getItem('play_history') || '[]');
-    // Hapus duplikat
-    history = history.filter(s => s.url !== song.url);
-    // Tambah di awal
-    history.unshift(song);
-    // Batasi jumlah
-    if (history.length > MAX_HISTORY) history.pop();
-    localStorage.setItem('play_history', JSON.stringify(history));
+// --- LIBRARY & PLAYLIST MANAGEMENT ---
+function openLikeOptionModal() {
+    if(!currentMeta) return;
+    
+    document.getElementById('modal-like-options').classList.add('active');
+    const listDiv = document.getElementById('like-options-list');
+    listDiv.innerHTML = '';
+
+    const likedItem = document.createElement('div');
+    likedItem.className = 'pl-select-item';
+    likedItem.innerHTML = `<div style="width:40px;height:40px;background:var(--green);display:flex;align-items:center;justify-content:center;border-radius:4px;"><i class="fa-solid fa-heart" style="color:white"></i></div><span>Liked Songs</span>`;
+    likedItem.onclick = () => {
+        toggleLikedSongs();
+        closeModal('modal-like-options');
+    };
+    listDiv.appendChild(likedItem);
+
+    const playlists = JSON.parse(localStorage.getItem('sann_playlists') || '[]');
+    playlists.forEach(pl => {
+        const item = document.createElement('div');
+        item.className = 'pl-select-item';
+        item.innerHTML = `<img src="${pl.image}"><span>${pl.name}</span>`;
+        item.onclick = () => {
+            addSongToPlaylist(pl.id);
+            closeModal('modal-like-options');
+        };
+        listDiv.appendChild(item);
+    });
 }
 
-function showHistory() {
-    const history = JSON.parse(localStorage.getItem('play_history') || '[]');
+function toggleLikedSongs() {
+    let lib = JSON.parse(localStorage.getItem('sann_library') || '[]');
+    const exists = lib.find(s => s.url === currentMeta.url);
     
-    if (history.length === 0) {
-        showToast('Belum ada riwayat', 'info');
-        return;
+    if(!exists) {
+        lib.unshift(currentMeta); 
+        alert("Ditambahkan ke Liked Songs");
+    } else {
+        lib = lib.filter(s => s.url !== currentMeta.url);
+        alert("Dihapus dari Liked Songs");
     }
     
-    switchTab('search');
-    searchResults.innerHTML = '<h3 style="margin-bottom:15px;">Riwayat Putar</h3>';
+    localStorage.setItem('sann_library', JSON.stringify(lib));
+    checkLikeStatus();
+    loadLibrary();
+}
+
+function loadLibrary() {
+    libraryList.innerHTML = '';
     
-    history.forEach(song => {
+    const liked = JSON.parse(localStorage.getItem('sann_library') || '[]');
+    const likedDiv = document.createElement('div');
+    likedDiv.className = 'result-item';
+    likedDiv.style.background = 'linear-gradient(135deg, #450af5, #8e8e8e)';
+    likedDiv.innerHTML = `
+        <div style="width:50px; height:50px; display:flex; align-items:center; justify-content:center; font-size:20px;"><i class="fa-solid fa-heart"></i></div>
+        <div class="result-info">
+            <h4>Liked Songs</h4>
+            <p>${liked.length} liked songs</p>
+        </div>
+    `;
+    likedDiv.onclick = () => openPlaylistDetail('liked', 'Liked Songs', 'https://cdn.odzre.my.id/rri.jpg');
+    libraryList.appendChild(likedDiv);
+
+    const playlists = JSON.parse(localStorage.getItem('sann_playlists') || '[]');
+    playlists.forEach(pl => {
         const item = document.createElement('div');
         item.className = 'result-item';
         item.innerHTML = `
-            <img src="${song.cover}" onerror="this.src='https://cdn.odzre.my.id/aax.jpg'">
+            <img src="${pl.image}" alt="pl">
             <div class="result-info">
-                <h4>${escapeHtml(song.title)}</h4>
-                <p>${escapeHtml(song.artist)}</p>
+                <h4>${pl.name}</h4>
+                <p>${pl.songs.length} songs</p>
             </div>
-            <i class="fa-solid fa-play" style="color:var(--green)"></i>
+            <i class="fa-solid fa-trash del-pl-btn" onclick="deletePlaylist(${pl.id}, event)"></i>
         `;
-        item.onclick = () => playMusic(song);
-        searchResults.appendChild(item);
+        item.onclick = (e) => {
+            if(!e.target.classList.contains('del-pl-btn')) {
+                openPlaylistDetail(pl.id, pl.name, pl.image);
+            }
+        };
+        libraryList.appendChild(item);
     });
 }
 
-// ========== FITUR BARU: Online/Offline Detection ==========
-window.addEventListener('online', () => {
-    showToast('Kembali online', 'success');
-    document.body.classList.remove('offline-mode');
+function openCreateModal() { 
+    document.getElementById('modal-create-playlist').classList.add('active'); 
+}
+
+function closeModal(id) { 
+    document.getElementById(id).classList.remove('active'); 
+}
+
+document.getElementById('new-pl-file').addEventListener('change', function(e) {
+    const fileName = e.target.files[0] ? e.target.files[0].name : "Belum ada foto";
+    document.getElementById('file-name-display').innerText = fileName;
 });
 
-window.addEventListener('offline', () => {
-    showToast('Mode offline', 'warning');
-    document.body.classList.add('offline-mode');
+function saveNewPlaylist() {
+    const name = document.getElementById('new-pl-name').value;
+    const fileInput = document.getElementById('new-pl-file');
+    const file = fileInput.files[0];
     
-    if (offlineSongs.length > 0 && (!currentMeta || !offlineSongs.some(s => s.url === currentMeta?.url))) {
-        setTimeout(() => {
-            if (confirm('Anda sedang offline. Putar lagu yang sudah di-download?')) {
-                openOfflineLibrary();
-            }
-        }, 1000);
-    }
-});
+    if(!name) return alert("Nama playlist wajib diisi!");
 
-// ========== FITUR BARU: Enhanced End
+    const save = (imgSrc) => {
+        const newPl = { id: Date.now(), name: name, image: imgSrc, songs: [] };
+        const playlists = JSON.parse(localStorage.getItem('sann_playlists') || '[]');
+        playlists.push(newPl);
+        localStorage.setItem('sann_playlists', JSON.stringify(playlists));
+        
+        closeModal('modal-create-playlist');
+        document.getElementById('new-pl-name').value = '';
+        fileInput.value = '';
+        document.getElementById('file-name-display').innerText = "Belum ada foto";
+        loadLibrary();
+    };
+
+    if (file) {
+        const reader = new FileReader();
+        reader.onloadend = function() {
+            save(reader.result);
+        }
+        reader.readAsDataURL(file);
+    } else {
+        save("https://cdn.odzre.my.id/77c.jpg");
+    }
+}
+
+function deletePlaylist(id, e) {
+    e.stopPropagation();
+    if(!confirm("Hapus playlist ini?")) return;
+    let playlists = JSON.parse(localStorage.getItem('sann_playlists') || '[]');
+    playlists = playlists.filter(p => p.id !== id);
+    localStorage.setItem('sann_playlists', JSON.stringify(playlists));
+    loadLibrary();
+}
+
+function openPlaylistDetail(id, name, img) {
+    const detailView = document.getElementById('view-playlist-detail');
+    const targetId = 'view-playlist-detail';
+
+    document.querySelectorAll('.page-view').forEach(el => {
+        if(el.id !== targetId) {
+            el.style.display = 'none';
+            el.classList.remove('active');
+        }
+    });
+
+    detailView.style.display = 'block';
+    detailView.classList.add('active');
+
+    document.getElementById('pl-detail-name').innerText = name;
+    document.getElementById('pl-detail-img').src = img;
+
+    const listContainer = document.getElementById('playlist-songs-list');
+    listContainer.innerHTML = '';
+
+    let songs = [];
+    if(id === 'liked') {
+        songs = JSON.parse(localStorage.getItem('sann_library') || '[]');
+    } else {
+        const playlists = JSON.parse(localStorage.getItem('sann_playlists') || '[]');
+        const pl = playlists.find(p => p.id === id);
+        songs = pl ? pl.songs : [];
+    }
+
+    currentPlaylistSongs = songs; 
+    document.getElementById('pl-detail-count').innerText = `${songs.length} Songs`;
+
+    if(songs.length === 0) {
+        listContainer.innerHTML = '<p style="text-align:center; padding:20px; color:#777">Playlist kosong.</p>';
+    } else {
+        songs.forEach((song, index) => {
+            const item = document.createElement('div');
+            item.className = 'result-item';
+            item.innerHTML = `
+                <span style="color:#777; font-size:12px; margin-right:10px;">${index + 1}</span>
+                <img src="${song.cover}" alt="art">
+                <div class="result-info">
+                    <h4>${song.title}</h4>
+                    <p>${song.artist}</p>
+                </div>
+            `;
+            item.onclick = () => playMusic(song);
+            listContainer.appendChild(item);
+        });
+    }
+}
+
+function playPlaylistAll() {
+    if(currentPlaylistSongs.length > 0) {
+        playMusic(currentPlaylistSongs[0]);
+    } else {
+        alert("Playlist kosong!");
+    }
+}
+
+function openAddToPlaylistModal() {
+    if(!currentMeta) return alert("Putar lagu dulu!");
+    document.getElementById('modal-add-to-pl').classList.add('active');
+    
+    const listDiv = document.getElementById('list-pl-for-add');
+    listDiv.innerHTML = '';
+    
+    const playlists = JSON.parse(localStorage.getItem('sann_playlists') || '[]');
+    if(playlists.length === 0) {
+        listDiv.innerHTML = '<p style="text-align:center;">Belum ada playlist.</p>';
+        return;
+    }
+
+    playlists.forEach(pl => {
+        const item = document.createElement('div');
+        item.className = 'pl-select-item';
+        item.innerHTML = `<img src="${pl.image}"><span>${pl.name}</span>`;
+        item.onclick = () => addSongToPlaylist(pl.id);
+        listDiv.appendChild(item);
+    });
+}
+
+function addSongToPlaylist(plId) {
+    let playlists = JSON.parse(localStorage.getItem('sann_playlists') || '[]');
+    const index = playlists.findIndex(p => p.id === plId);
+    
+    if(index !== -1) {
+        const exists = playlists[index].songs.find(s => s.url === currentMeta.url);
+        if(exists) {
+            alert("Lagu sudah ada di playlist ini!");
+        } else {
+            playlists[index].songs.push(currentMeta);
+            localStorage.setItem('sann_playlists', JSON.stringify(playlists));
+            alert("Berhasil ditambahkan!");
+            closeModal('modal-add-to-pl');
+        }
+    }
+}
