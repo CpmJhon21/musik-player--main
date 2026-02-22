@@ -23,28 +23,47 @@ let shuffleMode = false;
 let repeatMode = 'none'; // 'none', 'all', 'one'
 let originalPlaylist = [];
 
-// API Base URL - Sesuaikan dengan domain Anda
-const API_BASE = '/api'; // Relative path, akan otomatis menggunakan domain yang sama
+// API Base URL - Relative path ke backend Anda
+const API_BASE = '/api'; // Akan memanggil index.js
 
 // ==================== API FUNCTIONS ====================
 
 /**
- * Melakukan pencarian lagu
- * @param {string} query - Kata kunci pencarian
+ * Melakukan pencarian lagu atau mendapatkan detail lagu
+ * @param {string} url - URL atau query pencarian
+ * @param {string} mode - 'search' atau 'stream'
  */
-async function searchSongs(query) {
+async function callAPI(url, mode = 'search') {
     try {
-        const response = await fetch(`${API_BASE}/index?url=${encodeURIComponent(query)}&mode=search`);
-        const data = await response.json();
-        return data;
+        const response = await fetch(`${API_BASE}/index?url=${encodeURIComponent(url)}&mode=${mode}`);
+        
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error || 'API Error');
+        }
+        
+        if (mode === 'stream') {
+            return response; // Return response object untuk stream
+        }
+        
+        return await response.json(); // Return JSON untuk search
     } catch (error) {
-        console.error('Search error:', error);
+        console.error('API call failed:', error);
         throw error;
     }
 }
 
 /**
- * Mendapatkan stream URL untuk diputar
+ * Melakukan pencarian lagu
+ * @param {string} query - Kata kunci pencarian (bisa URL atau query)
+ */
+async function searchSongs(query) {
+    const data = await callAPI(query, 'search');
+    return data; // Format: { type: 'list', songs: [...] }
+}
+
+/**
+ * Mendapatkan stream URL (sebenarnya langsung fetch ke endpoint stream)
  * @param {string} songUrl - URL lagu dari hasil search
  */
 function getStreamUrl(songUrl) {
@@ -88,23 +107,31 @@ async function playMusic(songData) {
         const streamUrl = getStreamUrl(songData.url);
         console.log('Streaming from:', streamUrl);
         
+        // Set audio source
         audio.src = streamUrl;
         audio.load();
         
+        // Play dengan promise
         const playPromise = audio.play();
         
         if (playPromise !== undefined) {
-            playPromise.catch(error => {
-                console.error('Playback failed:', error);
-                
-                if (error.name === 'NotAllowedError') {
-                    showToast('Klik play untuk memulai', 'info');
-                    isPlaying = false;
-                    updatePlayIcons();
-                } else {
-                    handleAudioError(error);
-                }
-            });
+            playPromise
+                .then(() => {
+                    console.log('Playing:', songData.title);
+                })
+                .catch(error => {
+                    console.error('Playback failed:', error);
+                    
+                    if (error.name === 'NotAllowedError') {
+                        showToast('Klik play untuk memulai', 'info');
+                        isPlaying = false;
+                        updatePlayIcons();
+                    } else if (error.name === 'NotSupportedError') {
+                        showToast('Format audio tidak didukung', 'error');
+                    } else {
+                        handleAudioError(error);
+                    }
+                });
         }
         
         saveToHistory(songData);
@@ -158,8 +185,10 @@ async function performSearch(query) {
             return;
         }
         
-        // Panggil API
+        // Panggil API search
         const data = await searchSongs(query);
+        console.log('Search results:', data);
+        
         loadingDiv.style.display = 'none';
 
         if (data.songs && data.songs.length > 0) {
@@ -178,7 +207,7 @@ async function performSearch(query) {
                 <i class="fa-solid fa-wifi-slash"></i>
                 <p>Gagal mencari</p>
                 <span>${error.message || 'Periksa koneksi internet'}</span>
-                <button onclick="performSearch('${query}')" class="retry-btn">
+                <button onclick="performSearch('${query.replace(/'/g, "\\'")}')" class="retry-btn">
                     <i class="fa-solid fa-rotate-right"></i> Coba Lagi
                 </button>
             </div>
@@ -188,31 +217,42 @@ async function performSearch(query) {
 
 /**
  * Render hasil pencarian
+ * Format song dari API Anda: 
+ * { 
+ *   id: "...", 
+ *   title: "...", 
+ *   artist: "...", 
+ *   url: "...", 
+ *   thumbnail: "..." 
+ * }
  */
 function renderSearchResults(songs) {
     const container = document.getElementById('search-results');
     container.innerHTML = '';
     
-    songs.forEach(song => {
+    songs.forEach((song, index) => {
         const item = document.createElement('div');
         item.className = 'result-item';
         item.innerHTML = `
-            <img src="${song.thumbnail}" alt="art" loading="lazy" onerror="this.src='https://cdn.odzre.my.id/aax.jpg'">
+            <img src="${song.thumbnail || 'https://cdn.odzre.my.id/aax.jpg'}" alt="art" loading="lazy" onerror="this.src='https://cdn.odzre.my.id/aax.jpg'">
             <div class="result-info">
-                <h4>${escapeHtml(song.title)}</h4>
-                <p>${escapeHtml(song.artist)}</p>
+                <h4>${escapeHtml(song.title || 'Unknown Title')}</h4>
+                <p>${escapeHtml(song.artist || 'Unknown Artist')}</p>
             </div>
             <i class="fa-solid fa-play" style="color:var(--green)"></i>
         `;
+        
+        // Simpan data lagu
         item.onclick = () => {
             currentPlaylistSongs = songs;
             playMusic({
                 url: song.url,
                 title: song.title,
                 artist: song.artist,
-                cover: song.thumbnail
+                cover: song.thumbnail || 'https://cdn.odzre.my.id/aax.jpg'
             });
         };
+        
         container.appendChild(item);
     });
 }
@@ -221,6 +261,7 @@ function renderSearchResults(songs) {
  * Escape HTML untuk keamanan
  */
 function escapeHtml(text) {
+    if (!text) return '';
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
@@ -228,6 +269,7 @@ function escapeHtml(text) {
 
 // ==================== AUDIO PLAYER SETUP ====================
 function setupAudioListeners() {
+    // Hapus listener lama
     audio.removeEventListener('timeupdate', handleTimeUpdate);
     audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
     audio.removeEventListener('ended', handleEnded);
@@ -236,7 +278,9 @@ function setupAudioListeners() {
     audio.removeEventListener('playing', handlePlaying);
     audio.removeEventListener('pause', handlePause);
     audio.removeEventListener('canplay', handleCanPlay);
+    audio.removeEventListener('stalled', handleStalled);
     
+    // Tambah listener baru
     audio.addEventListener('timeupdate', handleTimeUpdate);
     audio.addEventListener('loadedmetadata', handleLoadedMetadata);
     audio.addEventListener('ended', handleEnded);
@@ -245,6 +289,7 @@ function setupAudioListeners() {
     audio.addEventListener('playing', handlePlaying);
     audio.addEventListener('pause', handlePause);
     audio.addEventListener('canplay', handleCanPlay);
+    audio.addEventListener('stalled', handleStalled);
 }
 
 function handleTimeUpdate() {
@@ -262,6 +307,7 @@ function handleTimeUpdate() {
 function handleLoadedMetadata() {
     mainSlider.max = 100;
     document.getElementById('total-time').innerText = formatTime(audio.duration);
+    console.log('Audio duration:', audio.duration);
 }
 
 function handleEnded() {
@@ -270,7 +316,7 @@ function handleEnded() {
     
     if (repeatMode === 'one') {
         audio.currentTime = 0;
-        audio.play();
+        audio.play().catch(e => console.error('Repeat play failed:', e));
     } else {
         playNextSong();
     }
@@ -278,6 +324,8 @@ function handleEnded() {
 
 function handleAudioError(e) {
     console.error('Audio Error:', e);
+    console.error('Error code:', audio.error ? audio.error.code : 'unknown');
+    console.error('Error message:', audio.error ? audio.error.message : 'unknown');
     
     if (audioLoadAttempts < MAX_RETRY_ATTEMPTS) {
         audioLoadAttempts++;
@@ -286,6 +334,7 @@ function handleAudioError(e) {
         setTimeout(() => {
             if (currentMeta) {
                 const streamUrl = getStreamUrl(currentMeta.url);
+                console.log('Retrying with URL:', streamUrl);
                 audio.src = streamUrl;
                 audio.load();
                 audio.play().catch(err => {
@@ -303,6 +352,12 @@ function handleAudioError(e) {
 function handleBuffering() {
     document.getElementById('mini-play-btn').className = 'fa-solid fa-spinner fa-spin';
     document.getElementById('full-play-icon').className = 'fa-solid fa-spinner fa-spin';
+    showToast('Buffering...', 'info');
+}
+
+function handleStalled() {
+    console.log('Audio stalled');
+    showToast('Loading...', 'info');
 }
 
 function handlePlaying() {
@@ -350,7 +405,7 @@ function playNextSong() {
     
     if (repeatMode === 'one') {
         audio.currentTime = 0;
-        audio.play();
+        audio.play().catch(e => console.error('Repeat play failed:', e));
         return;
     }
     
@@ -416,16 +471,18 @@ function toggleRepeat() {
     repeatMode = modes[(currentIndex + 1) % modes.length];
     
     const btn = document.getElementById('repeat-btn');
-    btn.style.color = repeatMode !== 'none' ? 'var(--green)' : 'white';
     
     if (repeatMode === 'one') {
         btn.className = 'fa-solid fa-repeat-1';
+        btn.style.color = 'var(--green)';
         showToast('Repeat satu lagu', 'info');
     } else if (repeatMode === 'all') {
         btn.className = 'fa-solid fa-repeat';
+        btn.style.color = 'var(--green)';
         showToast('Repeat semua', 'info');
     } else {
         btn.className = 'fa-solid fa-repeat';
+        btn.style.color = 'white';
         showToast('Repeat nonaktif', 'info');
     }
 }
@@ -450,7 +507,7 @@ async function suggestNextSong() {
                     url: nextSong.url,
                     title: nextSong.title,
                     artist: nextSong.artist,
-                    cover: nextSong.thumbnail
+                    cover: nextSong.thumbnail || 'https://cdn.odzre.my.id/aax.jpg'
                 });
             }
         }
@@ -584,6 +641,8 @@ async function fetchLyrics(songTitle, artist) {
             { timeout: 5000 }
         );
         
+        if (!response.ok) throw new Error('Lyrics not found');
+        
         const data = await response.json();
         
         if (data.lyrics) {
@@ -627,7 +686,7 @@ function parseLyrics(lyricsText) {
                 time: time,
                 text: line
             });
-            time += 4;
+            time += 4; // Asumsi setiap baris 4 detik
         }
     });
     
@@ -810,7 +869,8 @@ async function loadOfflineSongs() {
             offlineSongs = stored;
         }
         renderOfflineIndicator();
-        document.getElementById('offline-count').textContent = offlineSongs.length;
+        const offlineCount = document.getElementById('offline-count');
+        if (offlineCount) offlineCount.textContent = offlineSongs.length;
     } catch (e) {
         console.error('Failed to load offline songs:', e);
     }
@@ -840,7 +900,14 @@ async function downloadCurrentSong() {
         
         // Download dari stream URL
         const streamUrl = getStreamUrl(currentMeta.url);
+        console.log('Downloading from:', streamUrl);
+        
         const response = await fetch(streamUrl);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+        
         const audioBlob = await response.blob();
         
         const reader = new FileReader();
@@ -864,7 +931,9 @@ async function downloadCurrentSong() {
             
             showToast('Download selesai!', 'success');
             renderOfflineIndicator();
-            document.getElementById('offline-count').textContent = offlineSongs.length;
+            
+            const offlineCount = document.getElementById('offline-count');
+            if (offlineCount) offlineCount.textContent = offlineSongs.length;
         };
         
         reader.readAsDataURL(audioBlob);
@@ -1432,7 +1501,7 @@ function saveNewPlaylist() {
         const reader = new FileReader();
         reader.onloadend = function() {
             save(reader.result);
-        }
+        };
         reader.readAsDataURL(file);
     } else {
         save("https://cdn.odzre.my.id/77c.jpg");
@@ -1624,6 +1693,12 @@ window.onload = () => {
     const historyIcon = document.querySelector('.fa-clock-rotate-left');
     if (historyIcon) {
         historyIcon.addEventListener('click', showHistory);
+    }
+    
+    // Cek koneksi awal
+    if (!navigator.onLine) {
+        document.body.classList.add('offline-mode');
+        showToast('Anda sedang offline', 'warning');
     }
 };
 
