@@ -4,12 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>JHON PLAYING | MUSIC HUB</title>
-    <link rel="stylesheet" href="/style.css">
+    <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
 
-    <!-- HOME VIEW -->
     <div id="view-home" class="page-view active">
         <div class="home-heder">
             <div class="header-text">
@@ -17,46 +16,17 @@
                 <h2 class="username">MUSIC HUB</h2>
             </div>
             <div class="header-icons">
-                <i class="fa-regular fa-bell" onclick="showNotifications()"></i>
-                <i class="fa-solid fa-clock-rotate-left" onclick="showHistory()"></i>
-                <i class="fa-solid fa-gear" onclick="openSettings()"></i>
-                <div id="user-menu" class="user-menu">
-                    <div id="user-avatar" class="user-avatar-small" onclick="toggleUserMenu()">G</div>
-                    <div id="user-dropdown" class="user-dropdown">
-                        <div class="user-info">
-                            <div class="user-avatar-medium">G</div>
-                            <div>
-                                <div id="display-name" class="display-name">Guest User</div>
-                                <div id="display-email" class="display-email">guest@music.app</div>
-                            </div>
-                        </div>
-                        <div class="dropdown-item" onclick="viewProfile()">
-                            <i class="fa-regular fa-user"></i> Profil
-                        </div>
-                        <div class="dropdown-item" onclick="viewSettings()">
-                            <i class="fa-solid fa-gear"></i> Pengaturan
-                        </div>
-                        <div class="dropdown-item" onclick="viewOfflineSongs()">
-                            <i class="fa-solid fa-download"></i> Offline
-                            <span id="offline-count" class="badge">0</span>
-                        </div>
-                        <div class="dropdown-divider"></div>
-                        <div class="dropdown-item" onclick="logout()" id="logout-btn">
-                            <i class="fa-solid fa-sign-out-alt"></i> Keluar
-                        </div>
-                        <div class="dropdown-item" onclick="showLoginModal()" id="login-btn">
-                            <i class="fa-solid fa-sign-in-alt"></i> Masuk
-                        </div>
-                    </div>
-                </div>
+                <i class="fa-regular fa-bell"></i>
+                <i class="fa-solid fa-clock-rotate-left"></i>
+                <i class="fa-solid fa-gear"></i>
             </div>
         </div>
 
         <div class="category-chips">
-            <span class="cat-chip active" onclick="filterCategory('music')">Music</span>
-            <span class="cat-chip" onclick="filterCategory('podcasts')">Podcasts</span>
-            <span class="cat-chip" onclick="filterCategory('live')">Live Events</span>
-            <span class="cat-chip" onclick="filterCategory('foryou')">Made For You</span>
+            <span class="cat-chip active">Music</span>
+            <span class="cat-chip">Podcasts</span>
+            <span class="cat-chip">Live Events</span>
+            <span class="cat-chip">Made For You</span>
         </div>
 
         <div class="quick-grid">
@@ -65,23 +35,23 @@
                 <span>Liked Songs</span>
             </div>
             <div class="quick-card" onclick="quickSearch('On Repeat')">
-                <img src="https://cdn.odzre.my.id/rri.jpg" alt="" loading="lazy">
+                <img src="https://cdn.odzre.my.id/rri.jpg" alt="">
                 <span>On Repeat</span>
             </div>
             <div class="quick-card" onclick="quickSearch('Top 50 Indonesia')">
-                <img src="https://cdn.odzre.my.id/osk.jpg" alt="" loading="lazy">
+                <img src="https://cdn.odzre.my.id/osk.jpg" alt="">
                 <span>Top 50 Indo</span>
             </div>
             <div class="quick-card" onclick="quickSearch('Lofi Beats')">
-                <img src="https://cdn.odzre.my.id/77c.jpg" alt="" loading="lazy">
+                <img src="https://cdn.odzre.my.id/77c.jpg" alt="">
                 <span>Lofi Beats</span>
             </div>
             <div class="quick-card" onclick="quickSearch('Rock Classics')">
-                <img src="https://cdn.odzre.my.id/zv0.jpg" alt="" loading="lazy">
+                <img src="https://cdn.odzre.my.id/zv0.jpg" alt="">
                 <span>Rock Classics</span>
             </div>
             <div class="quick-card" onclick="quickSearch('New Music Friday')">
-                <img src="https://cdn.odzre.my.id/50r.jpg" alt="" loading="lazy">
+                <img src="https://cdn.odzre.my.id/50r.jpg" alt="">
                 <span>New Release</span>
             </div>
         </div>
@@ -93,33 +63,33 @@
                 <h1>Mahalini</h1>
                 <p>Dengarkan hits terbaru "Sial" dan lainnya.</p>
             </div>
-            <img src="https://cdn.odzre.my.id/z55.jpg" alt="Hero" loading="lazy">
+            <img src="https://cdn.odzre.my.id/z55.jpg" alt="Hero">
         </div>
 
         <div class="section-title">Jump Back In</div>
         <div class="card-scroll">
             <div class="card" onclick="quickSearch('Sheila On 7')">
-                <img src="https://cdn.odzre.my.id/5t5.jpg" alt="" loading="lazy">
+                <img src="https://cdn.odzre.my.id/5t5.jpg" alt="">
                 <p>Sheila On 7</p>
                 <span class="subtext">Legendary Band</span>
             </div>
             <div class="card" onclick="quickSearch('Dewa 19')">
-                <img src="https://cdn.odzre.my.id/dif.jpg" alt="" loading="lazy">
+                <img src="https://cdn.odzre.my.id/dif.jpg" alt="">
                 <p>Dewa 19</p>
                 <span class="subtext">Best of 90s</span>
             </div>
             <div class="card" onclick="quickSearch('Nadin Amizah')">
-                <img src="https://cdn.odzre.my.id/ji5.jpg" alt="" loading="lazy">
+                <img src="https://cdn.odzre.my.id/ji5.jpg" alt="">
                 <p>Nadin Amizah</p>
                 <span class="subtext">Indie Folk</span>
             </div>
             <div class="card" onclick="quickSearch('Hindia')">
-                <img src="https://cdn.odzre.my.id/w7r.jpg" alt="" loading="lazy">
+                <img src="https://cdn.odzre.my.id/w7r.jpg" alt="">
                 <p>Hindia</p>
                 <span class="subtext">Alternative</span>
             </div>
             <div class="card" onclick="quickSearch('J-Pop Hits')">
-                <img src="https://cdn.odzre.my.id/m3p.jpg" alt="" loading="lazy">
+                <img src="https://cdn.odzre.my.id/m3p.jpg" alt="">
                 <p>J-Pop Hits</p>
                 <span class="subtext">Anime & Pop</span>
             </div>
@@ -128,35 +98,34 @@
         <div class="section-title">Your Favorite Artists</div>
         <div class="card-scroll artist-scroll">
             <div class="artist-circle" onclick="quickSearch('Tulus')">
-                <img src="https://cdn.odzre.my.id/oav.jpg" alt="" loading="lazy">
+                <img src="https://cdn.odzre.my.id/oav.jpg" alt="">
                 <p>Tulus</p>
             </div>
             <div class="artist-circle" onclick="quickSearch('Tiara Andini')">
-                <img src="https://cdn.odzre.my.id/f76.jpg" alt="" loading="lazy">
+                <img src="https://cdn.odzre.my.id/f76.jpg" alt="">
                 <p>Tiara</p>
             </div>
             <div class="artist-circle" onclick="quickSearch('Last Child')">
-                <img src="https://cdn.odzre.my.id/6j6.jpg" alt="" loading="lazy">
+                <img src="https://cdn.odzre.my.id/6j6.jpg" alt="">
                 <p>Last Child</p>
             </div>
             <div class="artist-circle" onclick="quickSearch('Bruno Mars')">
-                <img src="https://cdn.odzre.my.id/7xy.jpg" alt="" loading="lazy">
+                <img src="https://cdn.odzre.my.id/7xy.jpg" alt="">
                 <p>Bruno</p>
             </div>
             <div class="artist-circle" onclick="quickSearch('Coldplay')">
-                <img src="https://i.scdn.co/image/ab6761610000e5eb989ed05e1f0570cc4726c2d3" alt="" loading="lazy">
+                <img src="https://i.scdn.co/image/ab6761610000e5eb989ed05e1f0570cc4726c2d3" alt="">
                 <p>Coldplay</p>
             </div>
         </div>
     </div>
 
-    <!-- SEARCH VIEW -->
     <div id="view-search" class="page-view">
         <div class="search-header">
             <h1>Search</h1>
             <div class="search-box">
                 <i class="fa-solid fa-magnifying-glass"></i>
-                <input type="text" id="searchInput" placeholder="What do you want to listen to?" autocomplete="off">
+                <input type="text" id="searchInput" placeholder="What do you want to listen to?">
             </div>
         </div>
         
@@ -173,28 +142,26 @@
         </div>
     </div>
 
-    <!-- LIBRARY VIEW -->
     <div id="view-library" class="page-view">
         <div class="top-bar">
             <div class="lib-header">
-                <div class="user-avatar">S</div>
+                 <div class="user-avatar">S</div>
                 <h2>Your Library</h2>
             </div>
             <i class="fa-solid fa-plus add-lib" onclick="openCreateModal()"></i>
         </div>
         <div class="filter-chips">
-            <span class="chip active" onclick="filterLibrary('playlists')">Playlists</span>
-            <span class="chip" onclick="filterLibrary('artists')">Artists</span>
-            <span class="chip" onclick="filterLibrary('albums')">Albums</span>
+            <span class="chip active">Playlists</span>
+            <span class="chip">Artists</span>
+            <span class="chip">Albums</span>
         </div>
         <div id="library-list" class="result-list">
         </div>
     </div>
 
-    <!-- PLAYLIST DETAIL VIEW -->
     <div id="view-playlist-detail" class="page-view">
         <div class="playlist-header-view">
-            <i class="fa-solid fa-arrow-left" onclick="goBack()"></i>
+            <i class="fa-solid fa-arrow-left" onclick="switchTab('library')"></i>
             <img id="pl-detail-img" src="" alt="">
             <div class="pl-detail-info">
                 <span class="tag">PLAYLIST</span>
@@ -208,90 +175,12 @@
         <div id="playlist-songs-list" class="result-list"></div>
     </div>
 
-    <!-- DEVELOPER VIEW -->
-    <div id="view-developer" class="page-view">
-        <div class="dev-header">
-            <h1 class="dev-title"># Tentang Aplikasi</h1>
-            <p class="dev-subtitle">Sistem Informasi & Pengembangan</p>
-        </div>
-        
-        <div class="dev-profile-card">
-            <div class="dev-avatar-large">
-                <span>S</span>
-            </div>
-            <h2 class="dev-name">SANN404 FORUM</h2>
-            <p class="dev-role">Lead Developer & UI/UX Designer</p>
-            
-            <div class="dev-badge">
-                <i class="fa-solid fa-circle-check"></i>
-                <span>Sistem Online (v3.0.0)</span>
-            </div>
-            
-            <button class="dev-install-btn" onclick="installApp()">
-                <i class="fa-solid fa-download"></i> Install Aplikasi
-            </button>
-        </div>
-        
-        <div class="dev-section">
-            <h3 class="dev-section-title">Informasi Project</h3>
-            <p class="dev-description">
-                Aplikasi web <strong>Lyrics Music</strong> dikembangkan khusus agar mudah di gunakan di semua platform. Menampilkan lirik real-time dari database global dengan sistem navigasi sekelas aplikasi native.
-            </p>
-        </div>
-        
-        <div class="dev-section">
-            <div class="dev-spec-header">
-                <span class="dev-spec-icon"><i class="fa-solid fa-code"></i></span>
-                <h3 class="dev-section-title">Spesifikasi Teknis</h3>
-            </div>
-            
-            <div class="dev-spec-grid">
-                <div class="spec-item">
-                    <span class="spec-label">Frontend Core</span>
-                    <span class="spec-value">HTML5 / CSS3 / JS</span>
-                </div>
-                <div class="spec-item">
-                    <span class="spec-label">Backend API</span>
-                    <span class="spec-value">FastAPI Python</span>
-                </div>
-                <div class="spec-item">
-                    <span class="spec-label">Library Module</span>
-                    <span class="spec-value">ytmusicapi</span>
-                </div>
-                <div class="spec-item">
-                    <span class="spec-label">Local Storage</span>
-                    <span class="spec-value">IndexedDB + Cache API</span>
-                </div>
-                <div class="spec-item">
-                    <span class="spec-label">App Type</span>
-                    <span class="spec-value">Progressive Web App</span>
-                </div>
-                <div class="spec-item">
-                    <span class="spec-label">Cloud Server</span>
-                    <span class="spec-value">Vercel Serverless</span>
-                </div>
-            </div>
-        </div>
-        
-        <div class="dev-channel" onclick="window.open('https://t.me/sann404', '_blank')">
-            <i class="fa-brands fa-telegram"></i>
-            <span>Join Saluran Developer</span>
-            <i class="fa-solid fa-arrow-right"></i>
-        </div>
-        
-        <div class="dev-footer">
-            <p>Dibuat dengan dedikasi tinggi.</p>
-            <p class="copyright">Hak Cipta © 2026 SANN404 FORUM.</p>
-        </div>
-    </div>
-
-    <!-- BOTTOM PLAYER -->
     <div class="bottom-player" id="bottom-player">
         <div class="progress-bar-bg">
             <div class="progress-bar-fill" id="mini-progress"></div>
         </div>
         <div class="player-content">
-            <img id="mini-cover" src="https://cdn.odzre.my.id/aax.jpg" alt="cover" loading="lazy">
+            <img id="mini-cover" src="https://cdn.odzre.my.id/aax.jpg" alt="cover">
             <div class="mini-info">
                 <h4 id="mini-title">Not Playing</h4>
                 <p id="mini-artist">JHON PLAYING MUSIC</p>
@@ -302,7 +191,6 @@
         </div>
     </div>
 
-    <!-- NAVBAR -->
     <nav class="navbar">
         <div class="nav-item active" onclick="switchTab('home')">
             <i class="fa-solid fa-house"></i>
@@ -316,48 +204,22 @@
             <i class="fa-solid fa-book"></i>
             <span>Library</span>
         </div>
-        <div class="nav-item" onclick="switchTab('developer')">
-            <i class="fa-solid fa-code"></i>
-            <span>Developer</span>
-        </div>
     </nav>
 
-    <!-- FULL PLAYER -->
     <div id="full-player" class="full-player">
         <div class="full-header">
             <i class="fa-solid fa-chevron-down" onclick="closeFullPlayer()"></i>
             <span>Now Playing</span>
             <i class="fa-solid fa-list-ul" onclick="openAddToPlaylistModal()"></i>
         </div>
-        
-        <img id="full-cover" src="https://cdn.odzre.my.id/aax.jpg" alt="Song Title" loading="lazy">
-        
+        <img id="full-cover" src="https://cdn.odzre.my.id/aax.jpg" alt="Song Title">
         <div class="full-info">
             <div>
                 <h2 id="full-title">Song Title</h2>
                 <p id="full-artist">Artist</p>
             </div>
-            <div style="display: flex; gap: 15px;">
-                <i class="fa-regular fa-heart" id="like-btn" onclick="openLikeOptionModal()"></i>
-                <i class="fa-solid fa-download" id="download-btn" onclick="downloadCurrentSong()"></i>
-            </div>
+            <i class="fa-regular fa-heart" id="like-btn" onclick="openLikeOptionModal()"></i>
         </div>
-        
-        <!-- Lyrics Container -->
-        <div class="lyrics-container">
-            <div class="lyrics-header" onclick="toggleLyrics()">
-                <i class="fa-solid fa-music"></i>
-                <span>Lirik</span>
-                <i class="fa-solid fa-chevron-down" id="lyrics-chevron"></i>
-            </div>
-            <div id="lyrics-content" class="lyrics-content">
-                <div class="lyrics-loading">
-                    <div class="spinner"></div>
-                    <span>Memuat lirik...</span>
-                </div>
-            </div>
-        </div>
-        
         <div class="full-progress">
             <input type="range" id="main-slider" value="0" max="100">
             <div class="time">
@@ -365,28 +227,18 @@
                 <span id="total-time">0:00</span>
             </div>
         </div>
-        
         <div class="full-controls">
-            <i class="fa-solid fa-shuffle" onclick="toggleShuffle()" id="shuffle-btn"></i>
-            <i class="fa-solid fa-backward-step" onclick="playPrevious()"></i>
+            <i class="fa-solid fa-shuffle" style="font-size: 20px; color: var(--green);"></i>
+            <i class="fa-solid fa-backward-step"></i>
             <div class="play-circle" onclick="togglePlay()">
                 <i class="fa-solid fa-play" id="full-play-icon"></i>
             </div>
-            <i class="fa-solid fa-forward-step" onclick="playNext()"></i>
-            <i class="fa-solid fa-repeat" onclick="toggleRepeat()" id="repeat-btn"></i>
+            <i class="fa-solid fa-forward-step"></i>
+            <i class="fa-solid fa-repeat" style="font-size: 20px; color: var(--gray);"></i>
         </div>
-        
-        <!-- Volume Control -->
-        <div class="volume-control">
-            <i class="fa-solid fa-volume-high" id="volume-icon" onclick="toggleMute()"></i>
-            <input type="range" id="volume-slider" min="0" max="100" value="80" class="volume-slider">
-            <span id="volume-percent">80%</span>
-        </div>
-        
         <div class="dev-credit">Developer: JHON API FORUM</div>
     </div>
 
-    <!-- MODAL: Create Playlist -->
     <div id="modal-create-playlist" class="modal-overlay">
         <div class="modal-box">
             <h3>Buat Playlist Baru</h3>
@@ -403,7 +255,6 @@
         </div>
     </div>
 
-    <!-- MODAL: Add to Playlist -->
     <div id="modal-add-to-pl" class="modal-overlay">
         <div class="modal-box">
             <h3>Simpan ke Playlist</h3>
@@ -412,70 +263,16 @@
         </div>
     </div>
 
-    <!-- MODAL: Like Options -->
     <div id="modal-like-options" class="modal-overlay">
         <div class="modal-box">
             <h3>Simpan Lagu Ke...</h3>
-            <div id="like-options-list" class="pl-select-list"></div>
+            <div id="like-options-list" class="pl-select-list">
+                </div>
             <button onclick="closeModal('modal-like-options')" class="btn-cancel full-width">Batal</button>
         </div>
     </div>
 
-    <!-- MODAL: Login -->
-    <div id="modal-login" class="modal-overlay">
-        <div class="modal-box login-modal">
-            <div class="login-header">
-                <i class="fa-solid fa-headphones" style="font-size: 40px; color: var(--green);"></i>
-                <h2>Masuk ke Music Hub</h2>
-                <p style="color: var(--gray); font-size: 13px;">Nikmati musik tanpa batas</p>
-            </div>
-            
-            <div class="login-tabs">
-                <button class="login-tab active" onclick="switchLoginTab('login')">Masuk</button>
-                <button class="login-tab" onclick="switchLoginTab('register')">Daftar</button>
-            </div>
-            
-            <div id="login-form" class="login-form active">
-                <input type="email" id="login-email" placeholder="Email" class="login-input">
-                <input type="password" id="login-password" placeholder="Kata Sandi" class="login-input">
-                <div class="login-options">
-                    <label>
-                        <input type="checkbox" id="remember-me"> Ingat saya
-                    </label>
-                    <a href="#" onclick="forgotPassword()">Lupa password?</a>
-                </div>
-                <button onclick="doLogin()" class="login-btn">Masuk</button>
-            </div>
-            
-            <div id="register-form" class="login-form">
-                <input type="text" id="register-name" placeholder="Nama Lengkap" class="login-input">
-                <input type="email" id="register-email" placeholder="Email" class="login-input">
-                <input type="password" id="register-password" placeholder="Kata Sandi" class="login-input">
-                <input type="password" id="register-confirm" placeholder="Konfirmasi Kata Sandi" class="login-input">
-                <button onclick="doRegister()" class="login-btn">Daftar</button>
-            </div>
-            
-            <div class="login-divider">
-                <span>atau masuk dengan</span>
-            </div>
-            
-            <div class="social-login">
-                <button class="social-btn google" onclick="socialLogin('google')">
-                    <i class="fa-brands fa-google"></i>
-                </button>
-                <button class="social-btn facebook" onclick="socialLogin('facebook')">
-                    <i class="fa-brands fa-facebook-f"></i>
-                </button>
-                <button class="social-btn github" onclick="socialLogin('github')">
-                    <i class="fa-brands fa-github"></i>
-                </button>
-            </div>
-            
-            <button onclick="closeModal('modal-login')" class="btn-cancel full-width" style="margin-top: 15px;">Tutup</button>
-        </div>
-    </div>
-
     <audio id="audio-source"></audio>
-    <script src="/script.js"></script>
+    <script src="script.js"></script>
 </body>
 </html>

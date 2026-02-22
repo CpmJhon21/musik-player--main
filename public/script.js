@@ -20,45 +20,15 @@ let isDraggingSlider = false;
 // --- INITIALIZATION ---
 window.onload = () => {
     loadLibrary();
-    
-    // Tambahkan event listener ke icon gear
-    const gearIcon = document.querySelector('.fa-gear');
-    if (gearIcon) {
-        gearIcon.addEventListener('click', function() {
-            switchTab('developer');
-        });
-    }
-    
-    // Tambahkan ke icon bell
-    const bellIcon = document.querySelector('.fa-bell');
-    if (bellIcon) {
-        bellIcon.addEventListener('click', function() {
-            alert('Notifikasi: Belum ada notifikasi baru.');
-        });
-    }
-    
-    // Tambahkan ke icon history
-    const historyIcon = document.querySelector('.fa-clock-rotate-left');
-    if (historyIcon) {
-        historyIcon.addEventListener('click', function() {
-            alert('Riwayat putar akan segera tersedia.');
-        });
-    }
 };
 
-// --- NAVIGATION ---
+// --- NAVIGATION (FIXED: NO BLINK/KEDIPAN) ---
 function switchTab(tabName) {
-    let targetId;
-    if (tabName === 'playlist-detail') {
-        targetId = 'view-playlist-detail';
-    } else if (tabName === 'developer') {
-        targetId = 'view-developer';
-    } else {
-        targetId = `view-${tabName}`;
-    }
-    
+    // 1. Tentukan target ID
+    const targetId = tabName === 'playlist-detail' ? 'view-playlist-detail' : `view-${tabName}`;
     const targetView = document.getElementById(targetId);
 
+    // 2. Hide semua view KECUALI target (agar tidak numpuk tapi langsung ganti)
     document.querySelectorAll('.page-view').forEach(el => {
         if(el.id !== targetId) {
             el.style.display = 'none';
@@ -66,16 +36,16 @@ function switchTab(tabName) {
         }
     });
 
+    // 3. Langsung tampilkan target tanpa setTimeout (INSTAN)
     if(targetView) {
         targetView.style.display = 'block';
         targetView.classList.add('active');
     }
     
+    // Update icon navbar aktif
     document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
     
-    const navItems = ['home', 'search', 'library', 'developer'];
-    const navIndex = navItems.indexOf(tabName);
-    
+    const navIndex = ['home', 'search', 'library'].indexOf(tabName);
     if(navIndex !== -1 && document.querySelectorAll('.nav-item')[navIndex]) {
         document.querySelectorAll('.nav-item')[navIndex].classList.add('active');
     }
@@ -170,6 +140,7 @@ function updateUI(meta) {
     document.getElementById('full-title').innerText = meta.title;
     document.getElementById('full-artist').innerText = meta.artist;
 
+    // Cek status Like (hanya visual awal)
     checkLikeStatus();
 }
 
@@ -232,7 +203,7 @@ audio.addEventListener('playing', () => {
     updatePlayIcons();
 });
 
-// --- SEEKING & PROGRESS BAR ---
+// --- SEEKING & PROGRESS BAR LOGIC ---
 audio.addEventListener('timeupdate', () => {
     if (!audio.duration) return;
     
@@ -262,6 +233,7 @@ mainSlider.addEventListener('change', (e) => {
 audio.addEventListener('ended', async () => {
     if(!currentMeta) return;
 
+    // Auto Play Logic
     const currentIndex = currentPlaylistSongs.findIndex(s => s.url === currentMeta.url);
     if (currentIndex !== -1 && currentIndex < currentPlaylistSongs.length - 1) {
         playMusic(currentPlaylistSongs[currentIndex + 1]);
@@ -287,13 +259,11 @@ audio.addEventListener('ended', async () => {
                     cover: nextSong.thumbnail
                 });
             } else {
-                isPlaying = false; 
-                updatePlayIcons();
+                isPlaying = false; updatePlayIcons();
             }
         }
     } catch (e) {
-        isPlaying = false; 
-        updatePlayIcons();
+        isPlaying = false; updatePlayIcons();
     }
 });
 
@@ -305,6 +275,7 @@ function formatTime(s) {
 }
 
 // --- LIBRARY & PLAYLIST MANAGEMENT ---
+
 function openLikeOptionModal() {
     if(!currentMeta) return;
     
@@ -312,6 +283,7 @@ function openLikeOptionModal() {
     const listDiv = document.getElementById('like-options-list');
     listDiv.innerHTML = '';
 
+    // Opsi 1: Liked Songs (Default)
     const likedItem = document.createElement('div');
     likedItem.className = 'pl-select-item';
     likedItem.innerHTML = `<div style="width:40px;height:40px;background:var(--green);display:flex;align-items:center;justify-content:center;border-radius:4px;"><i class="fa-solid fa-heart" style="color:white"></i></div><span>Liked Songs</span>`;
@@ -321,6 +293,7 @@ function openLikeOptionModal() {
     };
     listDiv.appendChild(likedItem);
 
+    // Opsi 2: Custom Playlists
     const playlists = JSON.parse(localStorage.getItem('sann_playlists') || '[]');
     playlists.forEach(pl => {
         const item = document.createElement('div');
@@ -351,9 +324,11 @@ function toggleLikedSongs() {
     loadLibrary();
 }
 
+// Render Library
 function loadLibrary() {
     libraryList.innerHTML = '';
     
+    // Folder Liked Songs
     const liked = JSON.parse(localStorage.getItem('sann_library') || '[]');
     const likedDiv = document.createElement('div');
     likedDiv.className = 'result-item';
@@ -368,6 +343,7 @@ function loadLibrary() {
     likedDiv.onclick = () => openPlaylistDetail('liked', 'Liked Songs', 'https://cdn.odzre.my.id/rri.jpg');
     libraryList.appendChild(likedDiv);
 
+    // Custom Playlists
     const playlists = JSON.parse(localStorage.getItem('sann_playlists') || '[]');
     playlists.forEach(pl => {
         const item = document.createElement('div');
@@ -389,13 +365,9 @@ function loadLibrary() {
     });
 }
 
-function openCreateModal() { 
-    document.getElementById('modal-create-playlist').classList.add('active'); 
-}
-
-function closeModal(id) { 
-    document.getElementById(id).classList.remove('active'); 
-}
+// Modal Helpers
+function openCreateModal() { document.getElementById('modal-create-playlist').classList.add('active'); }
+function closeModal(id) { document.getElementById(id).classList.remove('active'); }
 
 document.getElementById('new-pl-file').addEventListener('change', function(e) {
     const fileName = e.target.files[0] ? e.target.files[0].name : "Belum ada foto";
@@ -446,6 +418,7 @@ function openPlaylistDetail(id, name, img) {
     const detailView = document.getElementById('view-playlist-detail');
     const targetId = 'view-playlist-detail';
 
+    // 1. Hide view lain
     document.querySelectorAll('.page-view').forEach(el => {
         if(el.id !== targetId) {
             el.style.display = 'none';
@@ -453,6 +426,7 @@ function openPlaylistDetail(id, name, img) {
         }
     });
 
+    // 2. Langsung tampilkan detail
     detailView.style.display = 'block';
     detailView.classList.add('active');
 
