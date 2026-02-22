@@ -100,7 +100,7 @@ async function performSearch(query) {
                 searchResults.appendChild(item);
             });
         } else {
-            searchResults.innerHTML = '<div style="text-align:center; padding:20px;">Lagu tidak ditemukan.</div>';
+            searchResults.innerHTML = '<div style="text-align:center; padding:20px;">Server sedang penuh, silakan tunggu sebentar</div>';
         }
     } catch (e) {
         loadingDiv.style.display = 'none';
@@ -146,7 +146,7 @@ function updateUI(meta) {
 
 function checkLikeStatus() {
     if(!currentMeta) return;
-    const lib = JSON.parse(localStorage.getItem('sann_library') || '[]');
+    const lib = JSON.parse(localStorage.getItem('jhon_library') || '[]');
     const isLiked = lib.find(s => s.url === currentMeta.url);
     const likeBtn = document.getElementById('like-btn');
     
@@ -294,7 +294,7 @@ function openLikeOptionModal() {
     listDiv.appendChild(likedItem);
 
     // Opsi 2: Custom Playlists
-    const playlists = JSON.parse(localStorage.getItem('sann_playlists') || '[]');
+    const playlists = JSON.parse(localStorage.getItem('jhon_playlists') || '[]');
     playlists.forEach(pl => {
         const item = document.createElement('div');
         item.className = 'pl-select-item';
@@ -308,7 +308,7 @@ function openLikeOptionModal() {
 }
 
 function toggleLikedSongs() {
-    let lib = JSON.parse(localStorage.getItem('sann_library') || '[]');
+    let lib = JSON.parse(localStorage.getItem('jhon_library') || '[]');
     const exists = lib.find(s => s.url === currentMeta.url);
     
     if(!exists) {
@@ -319,7 +319,7 @@ function toggleLikedSongs() {
         alert("Dihapus dari Liked Songs");
     }
     
-    localStorage.setItem('sann_library', JSON.stringify(lib));
+    localStorage.setItem('jhon_library', JSON.stringify(lib));
     checkLikeStatus();
     loadLibrary();
 }
@@ -329,7 +329,7 @@ function loadLibrary() {
     libraryList.innerHTML = '';
     
     // Folder Liked Songs
-    const liked = JSON.parse(localStorage.getItem('sann_library') || '[]');
+    const liked = JSON.parse(localStorage.getItem('jhon_library') || '[]');
     const likedDiv = document.createElement('div');
     likedDiv.className = 'result-item';
     likedDiv.style.background = 'linear-gradient(135deg, #450af5, #8e8e8e)';
@@ -344,7 +344,7 @@ function loadLibrary() {
     libraryList.appendChild(likedDiv);
 
     // Custom Playlists
-    const playlists = JSON.parse(localStorage.getItem('sann_playlists') || '[]');
+    const playlists = JSON.parse(localStorage.getItem('jhon_playlists') || '[]');
     playlists.forEach(pl => {
         const item = document.createElement('div');
         item.className = 'result-item';
@@ -383,9 +383,9 @@ function saveNewPlaylist() {
 
     const save = (imgSrc) => {
         const newPl = { id: Date.now(), name: name, image: imgSrc, songs: [] };
-        const playlists = JSON.parse(localStorage.getItem('sann_playlists') || '[]');
+        const playlists = JSON.parse(localStorage.getItem('jhon_playlists') || '[]');
         playlists.push(newPl);
-        localStorage.setItem('sann_playlists', JSON.stringify(playlists));
+        localStorage.setItem('jhon_playlists', JSON.stringify(playlists));
         
         closeModal('modal-create-playlist');
         document.getElementById('new-pl-name').value = '';
@@ -408,9 +408,9 @@ function saveNewPlaylist() {
 function deletePlaylist(id, e) {
     e.stopPropagation();
     if(!confirm("Hapus playlist ini?")) return;
-    let playlists = JSON.parse(localStorage.getItem('sann_playlists') || '[]');
+    let playlists = JSON.parse(localStorage.getItem('jhon_playlists') || '[]');
     playlists = playlists.filter(p => p.id !== id);
-    localStorage.setItem('sann_playlists', JSON.stringify(playlists));
+    localStorage.setItem('jhon_playlists', JSON.stringify(playlists));
     loadLibrary();
 }
 
@@ -438,9 +438,9 @@ function openPlaylistDetail(id, name, img) {
 
     let songs = [];
     if(id === 'liked') {
-        songs = JSON.parse(localStorage.getItem('sann_library') || '[]');
+        songs = JSON.parse(localStorage.getItem('jhon_library') || '[]');
     } else {
-        const playlists = JSON.parse(localStorage.getItem('sann_playlists') || '[]');
+        const playlists = JSON.parse(localStorage.getItem('jhon_playlists') || '[]');
         const pl = playlists.find(p => p.id === id);
         songs = pl ? pl.songs : [];
     }
@@ -483,7 +483,7 @@ function openAddToPlaylistModal() {
     const listDiv = document.getElementById('list-pl-for-add');
     listDiv.innerHTML = '';
     
-    const playlists = JSON.parse(localStorage.getItem('sann_playlists') || '[]');
+    const playlists = JSON.parse(localStorage.getItem('jhon_playlists') || '[]');
     if(playlists.length === 0) {
         listDiv.innerHTML = '<p style="text-align:center;">Belum ada playlist.</p>';
         return;
@@ -499,7 +499,7 @@ function openAddToPlaylistModal() {
 }
 
 function addSongToPlaylist(plId) {
-    let playlists = JSON.parse(localStorage.getItem('sann_playlists') || '[]');
+    let playlists = JSON.parse(localStorage.getItem('jhon_playlists') || '[]');
     const index = playlists.findIndex(p => p.id === plId);
     
     if(index !== -1) {
@@ -508,7 +508,7 @@ function addSongToPlaylist(plId) {
             alert("Lagu sudah ada di playlist ini!");
         } else {
             playlists[index].songs.push(currentMeta);
-            localStorage.setItem('sann_playlists', JSON.stringify(playlists));
+            localStorage.setItem('jhon_playlists', JSON.stringify(playlists));
             alert("Berhasil ditambahkan!");
             closeModal('modal-add-to-pl');
         }
