@@ -1,4 +1,4 @@
-const CACHE_NAME = 'music-hub-v3';
+const CACHE_NAME = 'music-hub-v4'; // Naikkan versi
 const urlsToCache = [
   '/',
   '/index.html',
@@ -8,29 +8,59 @@ const urlsToCache = [
   'https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap'
 ];
 
+// API endpoints yang TIDAK boleh di-cache
+const API_PATHS = ['/api/', '/api/index'];
+
 self.addEventListener('install', event => {
+  self.skipWaiting(); // Langsung aktifkan service worker baru
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then(cache => {
-        console.log('Opened cache');
-        return cache.addAll(urlsToCache);
+        console.log('Caching assets...');
+        return cache.addAll(urlsToCache).catch(error => {
+          console.error('Cache failed:', error);
+        });
       })
   );
 });
 
 self.addEventListener('fetch', event => {
+  const url = new URL(event.request.url);
+  
+  // JANGAN cache panggilan API
+  if (API_PATHS.some(path => url.pathname.includes(path))) {
+    event.respondWith(
+      fetch(event.request)
+        .then(response => response)
+        .catch(() => {
+          // Jika offline, return error
+          return new Response(JSON.stringify({ 
+            error: 'Anda sedang offline' 
+          }), {
+            status: 503,
+            headers: { 'Content-Type': 'application/json' }
+          });
+        })
+    );
+    return;
+  }
+  
+  // Untuk asset statis, gunakan cache first
   event.respondWith(
     caches.match(event.request)
       .then(response => {
         if (response) {
           return response;
         }
+        
         return fetch(event.request)
           .then(response => {
-            if (!response || response.status !== 200 || response.type !== 'basic') {
+            // Jangan cache response yang bukan success
+            if (!response || response.status !== 200) {
               return response;
             }
             
+            // Clone response untuk cache
             const responseToCache = response.clone();
             caches.open(CACHE_NAME)
               .then(cache => {
@@ -39,27 +69,43 @@ self.addEventListener('fetch', event => {
             
             return response;
           })
-          .catch(() => {
-            // Fallback offline
-            if (event.request.url.includes('.jpg') || event.request.url.includes('.png')) {
+          .catch(error => {
+            console.log('Fetch failed:', error);
+            
+            // Fallback untuk gambar
+            if (event.request.url.match(/\.(jpg|jpeg|png|gif|webp)$/)) {
               return caches.match('https://cdn.odzre.my.id/aax.jpg');
             }
+            
+            // Return error response
+            return new Response('Network error', { status: 408 });
           });
       })
   );
 });
 
 self.addEventListener('activate', event => {
-  const cacheWhitelist = [CACHE_NAME];
+  // Hapus cache lama
   event.waitUntil(
-    caches.keys().then(cacheNames => {
-      return Promise.all(
-        cacheNames.map(cacheName => {
-          if (cacheWhitelist.indexOf(cacheName) === -1) {
-            return caches.delete(cacheName);
-          }
-        })
-      );
-    })
+    Promise.all([
+      self.clients.claim(),
+      caches.keys().then(cacheNames => {
+        return Promise.all(
+          cacheNames.map(cacheName => {
+            if (cacheName !== CACHE_NAME) {
+              console.log('Deleting old cache:', cacheName);
+              return caches.delete(cacheName);
+            }
+          })
+        );
+      })
+    ])
   );
+});
+
+// Bersihkan cache secara periodik (opsional)
+self.addEventListener('message', event => {
+  if (event.data === 'skipWaiting') {
+    self.skipWaiting();
+  }
 });
